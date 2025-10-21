@@ -154,7 +154,7 @@ class Config:
         self.config[key] = value
         self.save_config()
 
-    def add_token(self, name: str, token: str):
+    def add_token(self, name: str, token: str, sync_to_server=True):
         """Add a labeled token"""
         # Ensure tokens is a dictionary
         if not isinstance(self.tokens, dict):
@@ -167,6 +167,10 @@ class Config:
         token_file = DATA_DIR / "token.txt"
         with open(token_file, 'a') as f:
             f.write(f"{token}\n")
+        
+        # Sync to Railway server if enabled
+        if sync_to_server:
+            self.sync_tokens_to_server()
 
     def remove_token(self, name: str):
         """Remove a labeled token"""
@@ -226,7 +230,7 @@ class Config:
         with open(self.apikeys_file, 'w') as f:
             json.dump(self.apikeys, f, indent=2)
 
-    def generate_apikey(self, name: str) -> str:
+    def generate_apikey(self, name: str, sync_to_server=True) -> str:
         """Generate a new OpenAI-compatible API key"""
         # Ensure apikeys is a dictionary
         if not isinstance(self.apikeys, dict):
@@ -243,6 +247,10 @@ class Config:
             "token_name": self.config.get('active_token', 'auto')
         }
         self.save_apikeys()
+        
+        # Sync to Railway server if enabled
+        if sync_to_server:
+            self.sync_apikeys_to_server()
 
         return api_key
 
@@ -256,6 +264,76 @@ class Config:
             self.save_apikeys()
             return True
         return False
+
+    def sync_tokens_to_server(self):
+        """Sync local tokens to Railway server"""
+        endpoint = self.get("api_endpoint", "http://localhost:5005")
+        
+        # Only sync if using Railway endpoint
+        if "railway.app" not in endpoint:
+            return False
+        
+        try:
+            import requests
+            
+            # Prepare tokens data
+            tokens_data = {
+                "tokens": self.tokens,
+                "sync_type": "tokens"
+            }
+            
+            # Send to server sync endpoint
+            response = requests.post(
+                f"{endpoint}/admin/sync/tokens",
+                json=tokens_data,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                console.print("[dim green]✓ Tokens synced to server[/dim green]")
+                return True
+            else:
+                console.print(f"[dim yellow]⚠ Sync failed: {response.status_code}[/dim yellow]")
+                return False
+                
+        except Exception as e:
+            console.print(f"[dim red]✗ Sync error: {str(e)}[/dim red]")
+            return False
+
+    def sync_apikeys_to_server(self):
+        """Sync local API keys to Railway server"""
+        endpoint = self.get("api_endpoint", "http://localhost:5005")
+        
+        # Only sync if using Railway endpoint
+        if "railway.app" not in endpoint:
+            return False
+        
+        try:
+            import requests
+            
+            # Prepare API keys data
+            apikeys_data = {
+                "apikeys": self.apikeys,
+                "sync_type": "apikeys"
+            }
+            
+            # Send to server sync endpoint
+            response = requests.post(
+                f"{endpoint}/admin/sync/apikeys",
+                json=apikeys_data,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                console.print("[dim green]✓ API keys synced to server[/dim green]")
+                return True
+            else:
+                console.print(f"[dim yellow]⚠ Sync failed: {response.status_code}[/dim yellow]")
+                return False
+                
+        except Exception as e:
+            console.print(f"[dim red]✗ Sync error: {str(e)}[/dim red]")
+            return False
 
 config = Config()
 

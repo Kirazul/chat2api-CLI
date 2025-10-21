@@ -47,6 +47,10 @@ security_scheme = HTTPBearer()
 
 import api.chat2api
 
+# Import sync API for CLI-to-Server communication
+from api.sync import router as sync_router
+app.include_router(sync_router)
+
 # Add a simple health check endpoint
 @app.get("/")
 async def root():
