@@ -1,4 +1,7 @@
-Railway Build Version 13.0
+Railway Build Version 14.0
+- Switched from Dockerfile to Nixpacks builder
+- Updated Procfile to use uvicorn with $PORT variable
+- Updated railway.toml to use nixpacks builder
 - Changed to direct uvicorn command in Dockerfile
 - Added access logging and info level logging
 - Exposed both ports 8080 and 5005
