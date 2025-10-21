@@ -78,6 +78,11 @@ console = Console(
 # Configuration - Use exe-relative paths when bundled
 def get_data_dir():
     """Get the appropriate data directory based on execution context"""
+    # First check if config.json exists in current directory
+    current_dir = Path.cwd()
+    if (current_dir / "config.json").exists():
+        return current_dir
+    
     if getattr(sys, 'frozen', False):
         # Running as PyInstaller bundle - use exe directory
         return Path(sys.executable).parent

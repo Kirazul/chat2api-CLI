@@ -1,0 +1,5 @@
+{
+  "api_endpoint": "${RAILWAY_PUBLIC_DOMAIN:http://localhost:5005}",
+  "default_model": "gpt-3.5-turbo",
+  "active_token": "${ACTIVE_TOKEN:aziz}"
+}

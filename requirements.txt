@@ -1,3 +1,4 @@
+# Core server dependencies
 fastapi
 uvicorn[standard]
 httpx
@@ -12,10 +13,19 @@ cryptography
 pyjwt
 requests
 apscheduler
+
+# AI and processing
 tiktoken
+tiktoken-ext
 numpy
+
+# System and utilities
 psutil
 Pillow
 pybase64
 curl-cffi
 ua-generator
+
+# CLI interface (optional)
+rich
+prompt-toolkit

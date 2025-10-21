@@ -1,157 +1,119 @@
-# 🚀 Railway Deployment Guide for Chat2API
+# Railway Deployment Guide for Chat2API
 
-## 📋 Files to Push to GitHub
+This guide will help you deploy your Chat2API server to Railway.
 
-### Required Files:
-```
-├── app.py                    # Main server file
-├── server_launcher.py        # Server launcher
-├── chat.py                   # CLI application
-├── requirements.txt          # Python dependencies
-├── railway.json             # Railway configuration
-├── Procfile                 # Process file
-├── runtime.txt              # Python version
-├── .gitignore               # Git ignore rules
-├── api/                     # API modules
-│   ├── __init__.py
-│   ├── apikey_auth.py
-│   ├── chat2api.py
-│   ├── files.py
-│   ├── models.py
-│   └── tokens.py
-├── gateway/                 # Gateway modules
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── backend.py
-│   ├── chatgpt.py
-│   ├── gpts.py
-│   ├── login.py
-│   ├── reverseProxy.py
-│   ├── route.py
-│   ├── share.py
-│   └── v1.py
-├── chatgpt/                 # ChatGPT modules
-│   ├── __init__.py
-│   ├── authorization.py
-│   ├── chatFormat.py
-│   ├── chatLimit.py
-│   ├── ChatService.py
-│   ├── proofofWork.py
-│   ├── refreshToken.py
-│   ├── turnstile.py
-│   └── wssClient.py
-├── utils/                   # Utility modules
-│   ├── __init__.py
-│   ├── Client.py
-│   ├── config.py
-│   ├── globals.py
-│   ├── kv_utils.py
-│   ├── Logger.py
-│   └── retry.py
-├── templates/               # HTML templates
-│   ├── chatgpt.html
-│   ├── chatgpt_context.json
-│   ├── gpts_context.json
-│   ├── login.html
-│   └── tokens.html
-└── data/                    # Data files
-    ├── error_token.txt
-    ├── fp_map.json
-    ├── seed_map.json
-    └── token.txt
-```
+## Prerequisites
 
-## 🚀 Deployment Steps
+1. A Railway account (sign up at https://railway.app)
+2. Git repository with your code
+3. Railway CLI (optional but recommended)
 
-### 1. Push to GitHub
-```bash
-git add .
-git commit -m "Add Railway deployment configuration"
-git push origin main
-```
+## Deployment Steps
 
-### 2. Deploy on Railway
-1. Go to [railway.app](https://railway.app)
-2. Sign up/Login with GitHub
-3. Click "New Project"
-4. Select "Deploy from GitHub repo"
-5. Choose your Chat2API repository
-6. Railway will automatically detect the configuration
+### 1. Prepare Your Repository
 
-### 3. Set Environment Variables
-In Railway dashboard, go to Variables tab and add:
+The following files have been created for Railway deployment:
+- `railway.json` - Railway configuration
+- `Procfile` - Process definition
+- `runtime.txt` - Python version specification
+- `.env.production` - Production environment template
 
-```env
-HOST=0.0.0.0
-PORT=8080
-ENABLE_GATEWAY=true
-ENVIRONMENT=production
-```
+### 2. Deploy to Railway
 
-### 4. Get Your URL
-Railway will provide a URL like: `https://your-app-name.railway.app`
+#### Option A: Deploy via Railway Dashboard (Recommended)
 
-## 🔧 Configuration
+1. Go to https://railway.app and sign in
+2. Click "New Project"
+3. Select "Deploy from GitHub repo"
+4. Connect your GitHub account and select this repository
+5. Railway will automatically detect it's a Python project
 
-### Environment Variables:
-- `HOST=0.0.0.0` - Bind to all interfaces
-- `PORT=8080` - Railway's default port
-- `ENABLE_GATEWAY=true` - Enable web interface
-- `ENVIRONMENT=production` - Production mode
-
-### Custom Domain (Optional):
-1. Go to Railway dashboard
-2. Click on your project
-3. Go to Settings > Domains
-4. Add your custom domain
-
-## 📱 Using with CLI
-
-Update your CLI to use the Railway URL:
+#### Option B: Deploy via Railway CLI
 
 ```bash
-# Set environment variable
-set CHAT2API_ENDPOINT=https://your-app-name.railway.app
+# Install Railway CLI
+npm install -g @railway/cli
 
-# Or modify chat.py default endpoint
+# Login to Railway
+railway login
+
+# Initialize project
+railway init
+
+# Deploy
+railway up
 ```
 
-## 🔍 Monitoring
+### 3. Configure Environment Variables
 
-Railway provides:
-- ✅ Real-time logs
-- ✅ Metrics and monitoring
-- ✅ Automatic restarts
-- ✅ Health checks
+In your Railway project dashboard, go to the "Variables" tab and set:
 
-## 🆓 Free Tier Limits
+**Required Variables:**
+- `ENVIRONMENT=production`
+- `PORT` (Railway sets this automatically)
+- `ACTIVE_TOKEN=your_secure_token`
 
-Railway Free Tier includes:
-- 500 hours/month
-- 1GB RAM
-- 1GB storage
-- Custom domains
-- Automatic deployments
+**Optional Variables (customize as needed):**
+- `API_PREFIX=your_prefix`
+- `AUTHORIZATION=your_auth_tokens`
+- `AUTH_KEY=your_auth_key`
+- `CHATGPT_BASE_URL=https://chatgpt.com`
+- `PROXY_URL=your_proxy_urls`
+- `ENABLE_GATEWAY=true`
+- `HISTORY_DISABLED=true`
+- `POW_DIFFICULTY=000032`
+- `RETRY_TIMES=3`
 
-## 🚨 Troubleshooting
+### 4. Domain Configuration
+
+1. Railway will provide a default domain like `your-app-name.up.railway.app`
+2. You can add a custom domain in the "Settings" tab
+3. Update your `config.json` if needed (it's configured to use Railway's domain automatically)
+
+### 5. Health Checks
+
+The server includes health check endpoints:
+- `/health` - Basic health check
+- `/` - Root endpoint with version info
+
+Railway will use the `/health` endpoint to monitor your service.
+
+### 6. Logs and Monitoring
+
+- View logs in Railway dashboard under "Deployments"
+- Monitor resource usage in the "Metrics" tab
+- Set up alerts in "Settings" > "Notifications"
+
+## Important Notes
+
+1. **Security**: Never commit sensitive tokens to your repository. Use Railway's environment variables.
+2. **Scaling**: Railway automatically handles scaling based on traffic.
+3. **Database**: If you need persistent storage, add a Railway database service.
+4. **Custom Domain**: Configure SSL certificates through Railway's dashboard.
+
+## Troubleshooting
 
 ### Common Issues:
-1. **Port binding**: Make sure to use `PORT` environment variable
-2. **File permissions**: Data files should be writable
-3. **Memory limits**: Monitor usage in Railway dashboard
-4. **Timeout**: Railway has generous timeout limits
 
-### Logs:
-Check Railway dashboard > Deployments > View Logs for debugging.
+1. **Build Failures**: Check that all dependencies are in `requirements.txt`
+2. **Port Issues**: Ensure your app uses `PORT` environment variable
+3. **Environment Variables**: Verify all required variables are set in Railway dashboard
 
-## 🎯 Success!
+### Useful Commands:
 
-Once deployed, your Chat2API will be available at:
-`https://your-app-name.railway.app`
+```bash
+# View logs
+railway logs
 
-The web interface will be at:
-`https://your-app-name.railway.app/`
+# Connect to your deployment
+railway shell
 
-API endpoints:
-- `https://your-app-name.railway.app/v1/chat/completions`
-- `https://your-app-name.railway.app/docs` (API documentation)
+# Check service status
+railway status
+```
+
+## Support
+
+- Railway Documentation: https://docs.railway.app
+- Railway Discord: https://discord.gg/railway
+- Chat2API Issues: Check your repository's issues page
