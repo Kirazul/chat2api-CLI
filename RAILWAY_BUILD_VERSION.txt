@@ -1,4 +1,7 @@
-Railway Build Version 15.0
+Railway Build Version 16.0
+- Switched back to Nixpacks builder from Dockerfile
+- Updated Procfile to use uvicorn with $PORT variable
+- Updated railway.toml to use nixpacks builder
 - Switched back to Dockerfile builder from Nixpacks
 - Updated Procfile to use python app.py instead of uvicorn
 - Updated railway.toml to use dockerfile builder
