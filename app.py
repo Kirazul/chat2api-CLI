@@ -45,8 +45,6 @@ def get_templates_directory():
 templates = Jinja2Templates(directory=get_templates_directory())
 security_scheme = HTTPBearer()
 
-from app import app
-
 import api.chat2api
 
 # Add a simple health check endpoint
