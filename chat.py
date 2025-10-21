@@ -273,6 +273,7 @@ COMMANDS = {
     "/apikey list": "List all generated API keys",
     "/apikey test": "Test a specific API key",
     "/apikey remove": "Remove an API key",
+    "/endpoint": "Switch API endpoint (e.g., /endpoint https://your-server.com)",
     "/web": "Open ChatGPT web interface in default browser",
     "/exit": "Exit the CLI",
 }
@@ -373,6 +374,7 @@ def show_help():
   [bold #a855f7]/token remove <name>[/bold #a855f7]     Remove a token
 
 [bold #f59e0b]API Integration[/bold #f59e0b]
+  [bold #a855f7]/endpoint <url>[/bold #a855f7]          Switch API endpoint (e.g., /endpoint https://your-server.com)
   [bold #a855f7]/apikey generate[/bold #a855f7]         Generate OpenAI-compatible API key
   [bold #a855f7]/apikey list[/bold #a855f7]             List all generated API keys
   [bold #a855f7]/apikey test <name>[/bold #a855f7]      Test a specific API key
@@ -432,6 +434,118 @@ def open_web_interface():
         )
         console.print(error_panel)
         console.print()
+
+def switch_endpoint(new_endpoint):
+    """Switch the API endpoint with validation"""
+    console.print()
+    
+    # Validate URL format
+    if not new_endpoint.startswith(('http://', 'https://')):
+        error_panel = Panel(
+            "[bold red]✗ Invalid endpoint format![/bold red]\n\n"
+            "[bold]Endpoint must start with:[/bold]\n"
+            "• [bold #a855f7]http://[/bold #a855f7] (for local servers)\n"
+            "• [bold #a855f7]https://[/bold #a855f7] (for secure servers)\n\n"
+            "[bold]Examples:[/bold]\n"
+            "• [#a855f7]http://localhost:5005[/#a855f7]\n"
+            "• [#a855f7]https://your-server.com[/#a855f7]\n"
+            "• [#a855f7]https://api.example.com:8080[/#a855f7]",
+            title="[bold]Invalid Endpoint[/bold]",
+            border_style=Theme.ERROR,
+            padding=(1, 2)
+        )
+        console.print(error_panel)
+        console.print()
+        return False
+    
+    # Test the new endpoint
+    console.print(f"[dim]Testing endpoint: {new_endpoint}...[/dim]")
+    
+    try:
+        import requests
+        # Test with a simple request to /v1/models
+        test_url = f"{new_endpoint}/v1/models"
+        response = requests.get(test_url, timeout=5)
+        
+        if response.status_code == 200:
+            # Endpoint is working
+            config.set("api_endpoint", new_endpoint)
+            
+            success_panel = Panel(
+                f"[bold green]✓ Endpoint switched successfully![/bold green]\n\n"
+                f"[bold]New Endpoint:[/bold] [yellow]{new_endpoint}[/yellow]\n"
+                f"[bold]Status:[/bold] [green]✓ Online and responding[/green]\n"
+                f"[bold]Response Time:[/bold] [dim]{response.elapsed.total_seconds():.2f}s[/dim]\n\n"
+                f"[dim]All future API requests will use this endpoint.[/dim]",
+                title="[bold]Endpoint Changed[/bold]",
+                border_style=Theme.SUCCESS,
+                padding=(1, 2)
+            )
+            console.print(success_panel)
+            console.print()
+            return True
+        else:
+            # Endpoint responded but with error
+            error_panel = Panel(
+                f"[bold yellow]⚠ Endpoint responded but with error![/bold yellow]\n\n"
+                f"[bold]Endpoint:[/bold] [yellow]{new_endpoint}[/yellow]\n"
+                f"[bold]Status Code:[/bold] [yellow]{response.status_code}[/yellow]\n"
+                f"[bold]Response:[/bold] [dim]{response.text[:100]}...[/dim]\n\n"
+                f"[dim]The endpoint is reachable but may not be a valid Chat2API server.[/dim]",
+                title="[bold]Endpoint Error[/bold]",
+                border_style=Theme.WARNING,
+                padding=(1, 2)
+            )
+            console.print(error_panel)
+            console.print()
+            return False
+            
+    except requests.exceptions.Timeout:
+        error_panel = Panel(
+            f"[bold red]✗ Endpoint timeout![/bold red]\n\n"
+            f"[bold]Endpoint:[/bold] [yellow]{new_endpoint}[/yellow]\n"
+            f"[bold]Error:[/bold] [red]Connection timeout (5s)[/red]\n\n"
+            f"[dim]The endpoint is not responding or is too slow.[/dim]\n"
+            f"[dim]Please check if the server is running and accessible.[/dim]",
+            title="[bold]Connection Timeout[/bold]",
+            border_style=Theme.ERROR,
+            padding=(1, 2)
+        )
+        console.print(error_panel)
+        console.print()
+        return False
+        
+    except requests.exceptions.ConnectionError:
+        error_panel = Panel(
+            f"[bold red]✗ Connection failed![/bold red]\n\n"
+            f"[bold]Endpoint:[/bold] [yellow]{new_endpoint}[/yellow]\n"
+            f"[bold]Error:[/bold] [red]Connection refused[/red]\n\n"
+            f"[dim]The endpoint is not reachable. Please check:[/dim]\n"
+            f"[dim]• Server is running[/dim]\n"
+            f"[dim]• URL is correct[/dim]\n"
+            f"[dim]• Network connectivity[/dim]\n"
+            f"[dim]• Firewall settings[/dim]",
+            title="[bold]Connection Failed[/bold]",
+            border_style=Theme.ERROR,
+            padding=(1, 2)
+        )
+        console.print(error_panel)
+        console.print()
+        return False
+        
+    except Exception as e:
+        error_panel = Panel(
+            f"[bold red]✗ Unexpected error![/bold red]\n\n"
+            f"[bold]Endpoint:[/bold] [yellow]{new_endpoint}[/yellow]\n"
+            f"[bold]Error:[/bold] [red]{str(e)}[/red]\n\n"
+            f"[dim]An unexpected error occurred while testing the endpoint.[/dim]",
+            title="[bold]Test Error[/bold]",
+            border_style=Theme.ERROR,
+            padding=(1, 2)
+        )
+        console.print(error_panel)
+        console.print()
+        return False
 
 def show_status(current_model, current_stream, conversation_history):
     """Show current status with retro design"""
@@ -1314,6 +1428,29 @@ def main():
                 # Open web interface
                 elif command == "/web":
                     open_web_interface()
+                    continue
+
+                # Endpoint switching
+                elif command == "/endpoint":
+                    if arg:
+                        switch_endpoint(arg)
+                    else:
+                        # Show current endpoint and usage
+                        current_endpoint = config.get("api_endpoint", "http://localhost:5005")
+                        usage_panel = Panel(
+                            f"[bold yellow]⚠ Usage: /endpoint <url>[/bold yellow]\n\n"
+                            f"[bold]Current Endpoint:[/bold] [yellow]{current_endpoint}[/yellow]\n\n"
+                            f"[bold]Examples:[/bold]\n"
+                            f"• [#a855f7]/endpoint http://localhost:5005[/#a855f7]\n"
+                            f"• [#a855f7]/endpoint https://your-server.com[/#a855f7]\n"
+                            f"• [#a855f7]/endpoint https://api.example.com:8080[/#a855f7]\n\n"
+                            f"[dim]The endpoint will be tested before switching.[/dim]",
+                            title="[bold]Endpoint Usage[/bold]",
+                            border_style=Theme.WARNING,
+                            padding=(1, 2)
+                        )
+                        console.print(usage_panel)
+                        console.print()
                     continue
 
                 # Reset
