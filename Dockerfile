@@ -19,6 +19,7 @@ COPY . .
 
 # Expose port (Railway will override this)
 EXPOSE 8080
+EXPOSE 5005
 
 # Set environment variables for production
 ENV HOST=0.0.0.0
@@ -29,4 +30,4 @@ ENV API_PREFIX=
 ENV PYTHONUNBUFFERED=1
 
 # Start the server
-CMD ["python", "-u", "app.py"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]

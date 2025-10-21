@@ -1,4 +1,7 @@
-Railway Build Version 12.0
+Railway Build Version 13.0
+- Changed to direct uvicorn command in Dockerfile
+- Added access logging and info level logging
+- Exposed both ports 8080 and 5005
 - Added railway.toml configuration file
 - Explicitly specified Dockerfile path in railway.json
 - Added -u flag to Python command for unbuffered output

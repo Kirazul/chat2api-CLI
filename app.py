@@ -96,8 +96,8 @@ if __name__ == "__main__":
             "app:app", 
             host=host, 
             port=port,
-            access_log=False,
-            log_level="warning"
+            access_log=True,
+            log_level="info"
         )
     else:
         uvicorn.run("app:app", host=host, port=port)
