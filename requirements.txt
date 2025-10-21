@@ -13,7 +13,6 @@ pyjwt
 requests
 apscheduler
 tiktoken
-tiktoken-ext
 numpy
 psutil
 Pillow

@@ -1,5 +1,6 @@
-Railway Build Version 3.0
-- Fixed Dockerfile for Railway deployment
+Railway Build Version 4.0
+- Removed tiktoken-ext (non-existent package)
+- Fixed Dockerfile as default Dockerfile
 - Using requirements-server.txt (no CLI dependencies)
 - Added system dependencies for compilation
 - Optimized for Python 3.12
