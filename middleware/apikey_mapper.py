@@ -87,11 +87,17 @@ class APIKeyMapperMiddleware(BaseHTTPMiddleware):
                     logger.info(f"🔄 Replacing API key with ChatGPT token")
                     
                     # Update the authorization header in the request scope
-                    headers = MutableHeaders(request.scope["headers"])
-                    headers["authorization"] = f"Bearer {mapped_token}"
+                    # request.scope["headers"] is a list of tuples: [(b"header-name", b"value"), ...]
+                    new_headers = []
+                    for name, value in request.scope["headers"]:
+                        if name.lower() == b"authorization":
+                            # Replace with mapped token
+                            new_headers.append((name, f"Bearer {mapped_token}".encode()))
+                        else:
+                            new_headers.append((name, value))
                     
                     # Update the scope
-                    request.scope["headers"] = headers.raw
+                    request.scope["headers"] = new_headers
         
         # Continue with the request
         response = await call_next(request)
