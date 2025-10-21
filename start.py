@@ -29,8 +29,6 @@ def load_environment():
 if __name__ == "__main__":
     load_environment()
     
-    # Import and run the main app
-    from app import app
     import uvicorn
     
     # Get configuration from environment
@@ -43,13 +41,19 @@ if __name__ == "__main__":
     
     # Run with appropriate settings for production
     if environment == "production":
+        # Use import string for production to avoid the warning
         uvicorn.run(
-            app, 
+            "app:app", 
             host=host, 
             port=port,
             access_log=True,
-            log_level="info",
-            workers=1  # Railway works better with single worker
+            log_level="info"
         )
     else:
-        uvicorn.run(app, host=host, port=port, reload=True)
+        # For development, use import string with reload
+        uvicorn.run(
+            "app:app", 
+            host=host, 
+            port=port, 
+            reload=True
+        )
