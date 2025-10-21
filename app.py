@@ -86,6 +86,11 @@ if __name__ == "__main__":
     # Production settings
     environment = os.getenv("ENVIRONMENT", "development")
     
+    print(f"Starting Chat2API server on {host}:{port}")
+    print(f"Environment: {environment}")
+    print(f"Gateway enabled: {enable_gateway}")
+    print(f"API prefix: '{api_prefix}'")
+    
     if environment == "production":
         uvicorn.run(
             "app:app", 

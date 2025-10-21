@@ -26,6 +26,7 @@ ENV PORT=8080
 ENV ENVIRONMENT=production
 ENV ENABLE_GATEWAY=true
 ENV API_PREFIX=
+ENV PYTHONUNBUFFERED=1
 
 # Start the server
 CMD ["python", "app.py"]
