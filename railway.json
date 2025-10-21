@@ -1,10 +1,8 @@
 {
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "pip install --upgrade pip && pip install -r requirements.txt"
+    "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "python app.py",
     "healthcheckPath": "/docs",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
