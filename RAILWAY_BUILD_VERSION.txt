@@ -1,4 +1,6 @@
-Railway Build Version 17.0
+Railway Build Version 18.0
+- Switched back to Dockerfile builder from Nixpacks
+- Updated railway.toml to use dockerfile builder
 - FIXED: Removed circular import 'from app import app' in app.py
 - This was causing the FastAPI app to not be properly initialized
 - Switched back to Nixpacks builder from Dockerfile
