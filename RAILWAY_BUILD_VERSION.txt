@@ -1,4 +1,6 @@
-Railway Build Version 9.0
+Railway Build Version 10.0
+- Fixed Railway health check path (changed from /docs to /)
+- Added version info to root endpoint
 - Fixed API prefix configuration (removed quotes)
 - Added test endpoint (/test) for debugging
 - Fixed FastAPI docs URLs (removed api_prefix)

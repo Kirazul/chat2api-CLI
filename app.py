@@ -52,7 +52,7 @@ import api.chat2api
 # Add a simple health check endpoint
 @app.get("/")
 async def root():
-    return {"message": "Chat2API Server is running", "status": "healthy"}
+    return {"message": "Chat2API Server is running", "status": "healthy", "version": "1.7.1-beta1"}
 
 @app.get("/health")
 async def health():
