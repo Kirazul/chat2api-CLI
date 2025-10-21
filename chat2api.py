@@ -67,6 +67,8 @@ async def process(request_data, req_token):
 
 def map_apikey_to_token(api_key: str) -> str:
     """Map sk-xxx API key to ChatGPT token"""
+    logger.info(f"=== API KEY MAPPING CALLED === Input: {api_key[:20] if api_key else 'None'}...")
+    
     if not api_key or not api_key.startswith("sk-"):
         logger.info(f"Not an API key, passing through: {api_key[:20] if api_key else 'None'}...")
         return api_key
