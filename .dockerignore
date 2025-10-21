@@ -1,0 +1,9 @@
+.env
+*.pyc
+/.git/
+/.idea/
+/docs/
+/tmp/
+/data/
+/.venv/
+/.vscode/
