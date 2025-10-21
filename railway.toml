@@ -10,3 +10,4 @@ restartPolicyMaxRetries = 10
 
 [variables]
 ENVIRONMENT = "production"
+ENABLE_GATEWAY = "false"
