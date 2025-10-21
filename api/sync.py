@@ -86,6 +86,39 @@ async def sync_apikeys(request: APIKeysSyncRequest):
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
 
 
+@router.get("/admin/debug/apikey/{api_key}")
+async def debug_apikey(api_key: str):
+    """Debug API key mapping"""
+    try:
+        if APIKEYS_FILE.exists():
+            with open(APIKEYS_FILE, 'r') as f:
+                apikeys = json.load(f)
+            
+            for name, data in apikeys.items():
+                if data.get('key') == api_key:
+                    token_name = data.get('token_name')
+                    
+                    if TOKENS_FILE.exists():
+                        with open(TOKENS_FILE, 'r') as f:
+                            tokens = json.load(f)
+                        
+                        if token_name in tokens:
+                            token = tokens[token_name]
+                            return {
+                                "found": True,
+                                "api_key_name": name,
+                                "token_name": token_name,
+                                "token_preview": f"{token[:20]}...{token[-20:]}" if token else None
+                            }
+            
+            return {"found": False, "message": "API key not found in mapping"}
+        
+        return {"found": False, "message": "apikeys.json not found"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/admin/sync/status")
 async def sync_status():
     """Get sync status and file information"""
