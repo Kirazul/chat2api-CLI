@@ -20,9 +20,9 @@ log_config["formatters"]["default"]["fmt"] = default_format
 log_config["formatters"]["access"]["fmt"] = access_format
 
 app = FastAPI(
-    docs_url=f"/{api_prefix}/docs",    # Set Swagger UI documentation path
-    redoc_url=f"/{api_prefix}/redoc",  # Set Redoc documentation path
-    openapi_url=f"/{api_prefix}/openapi.json"  # Set OpenAPI JSON path
+    docs_url="/docs",    # Set Swagger UI documentation path
+    redoc_url="/redoc",  # Set Redoc documentation path
+    openapi_url="/openapi.json"  # Set OpenAPI JSON path
 )
 
 app.add_middleware(
@@ -57,6 +57,10 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy", "message": "Chat2API Server is running"}
+
+@app.get("/test")
+async def test():
+    return {"message": "Test endpoint working", "api_prefix": api_prefix}
 
 if enable_gateway:
     import gateway.share
