@@ -29,4 +29,4 @@ ENV API_PREFIX=
 ENV PYTHONUNBUFFERED=1
 
 # Start the server
-CMD ["python", "app.py"]
+CMD ["python", "-u", "app.py"]
