@@ -25,6 +25,7 @@ ENV HOST=0.0.0.0
 ENV PORT=8080
 ENV ENVIRONMENT=production
 ENV ENABLE_GATEWAY=true
+ENV API_PREFIX=""
 
 # Start the server
 CMD ["python", "app.py"]

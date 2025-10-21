@@ -49,6 +49,15 @@ from app import app
 
 import api.chat2api
 
+# Add a simple health check endpoint
+@app.get("/")
+async def root():
+    return {"message": "Chat2API Server is running", "status": "healthy"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "message": "Chat2API Server is running"}
+
 if enable_gateway:
     import gateway.share
     import gateway.login

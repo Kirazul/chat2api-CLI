@@ -1,4 +1,8 @@
-Railway Build Version 7.0
+Railway Build Version 8.0
+- Added health check endpoints (/, /health)
+- Fixed 404 errors by adding root endpoint
+- Set ENABLE_GATEWAY=true in Dockerfile
+- Set API_PREFIX="" for clean URLs
 - Added ua-generator module (missing dependency)
 - Added curl-cffi module (missing dependency)
 - Added pybase64 module (missing dependency)
