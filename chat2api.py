@@ -127,13 +127,17 @@ def map_apikey_to_token(api_key: str) -> str:
 
 @app.post(f"/{api_prefix}/v1/chat/completions" if api_prefix else "/v1/chat/completions")
 async def send_conversation(request: Request, req_token: str = Depends(oauth2_scheme)):
+    logger.info(f">>> ENDPOINT CALLED with token: {req_token[:20] if req_token else 'None'}...")
+    
     try:
         request_data = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail={"error": "Invalid JSON body"})
     
     # Map API key to ChatGPT token
+    logger.info(f">>> BEFORE MAPPING: {req_token[:20] if req_token else 'None'}...")
     req_token = map_apikey_to_token(req_token)
+    logger.info(f">>> AFTER MAPPING: {req_token[:20] if req_token else 'None'}...")
     
     chat_service, res = await async_retry(process, request_data, req_token)
     try:
