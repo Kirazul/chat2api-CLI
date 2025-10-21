@@ -1,4 +1,5 @@
-Railway Build Version 6.0
+Railway Build Version 7.0
+- Added ua-generator module (missing dependency)
 - Added curl-cffi module (missing dependency)
 - Added pybase64 module (missing dependency)
 - Fixed ModuleNotFoundError in Railway deployment
