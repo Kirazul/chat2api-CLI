@@ -33,6 +33,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add API Key Mapper Middleware
+from middleware.apikey_mapper import APIKeyMapperMiddleware
+app.add_middleware(APIKeyMapperMiddleware)
+
 # Handle templates path for both development and PyInstaller bundle
 def get_templates_directory():
     if getattr(sys, 'frozen', False):

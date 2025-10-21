@@ -65,80 +65,17 @@ async def process(request_data, req_token):
     return chat_service, res
 
 
-def map_apikey_to_token(api_key: str) -> str:
-    """Map sk-xxx API key to ChatGPT token"""
-    logger.info(f"=== API KEY MAPPING CALLED === Input: {api_key[:20] if api_key else 'None'}...")
-    
-    if not api_key or not api_key.startswith("sk-"):
-        logger.info(f"Not an API key, passing through: {api_key[:20] if api_key else 'None'}...")
-        return api_key
-    
-    try:
-        # Load API keys mapping
-        from pathlib import Path
-        import os
-        apikeys_file = Path("apikeys.json")
-        tokens_file = Path("tokens.json")
-        
-        logger.info(f"Looking for API key files in: {os.getcwd()}")
-        logger.info(f"apikeys.json exists: {apikeys_file.exists()}")
-        logger.info(f"tokens.json exists: {tokens_file.exists()}")
-        
-        if not apikeys_file.exists():
-            logger.warning("apikeys.json not found, returning original API key")
-            return api_key
-        
-        with open(apikeys_file, 'r') as f:
-            apikeys = json.load(f)
-        
-        logger.info(f"Loaded {len(apikeys)} API keys from file")
-        logger.info(f"Looking for API key: {api_key[:10]}...")
-        
-        # Find the API key
-        for name, data in apikeys.items():
-            if data.get('key') == api_key:
-                token_name = data.get('token_name', 'auto')
-                logger.info(f"Found API key '{name}' mapped to token '{token_name}'")
-                
-                # Load tokens
-                if tokens_file.exists():
-                    with open(tokens_file, 'r') as f:
-                        tokens = json.load(f)
-                    
-                    if token_name in tokens:
-                        logger.info(f"Successfully mapped API key to ChatGPT token")
-                        return tokens[token_name]
-                    elif token_name == 'auto' and tokens:
-                        logger.info(f"Using first available token")
-                        return list(tokens.values())[0]
-                else:
-                    logger.warning("tokens.json not found")
-        
-        # API key not found, return original
-        logger.warning(f"API key not found in mapping, returning original")
-        return api_key
-        
-    except Exception as e:
-        logger.error(f"API key mapping error: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return api_key
+# API key mapping is now handled by middleware in middleware/apikey_mapper.py
 
 
 @app.post(f"/{api_prefix}/v1/chat/completions" if api_prefix else "/v1/chat/completions")
 async def send_conversation(request: Request, req_token: str = Depends(oauth2_scheme)):
-    logger.info(f">>> ENDPOINT CALLED with token: {req_token[:20] if req_token else 'None'}...")
-    
     try:
         request_data = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail={"error": "Invalid JSON body"})
     
-    # Map API key to ChatGPT token
-    logger.info(f">>> BEFORE MAPPING: {req_token[:20] if req_token else 'None'}...")
-    req_token = map_apikey_to_token(req_token)
-    logger.info(f">>> AFTER MAPPING: {req_token[:20] if req_token else 'None'}...")
-    
+    # Note: API key mapping is now handled by middleware
     chat_service, res = await async_retry(process, request_data, req_token)
     try:
         if isinstance(res, types.AsyncGeneratorType):
