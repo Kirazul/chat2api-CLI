@@ -65,12 +65,56 @@ async def process(request_data, req_token):
     return chat_service, res
 
 
+def map_apikey_to_token(api_key: str) -> str:
+    """Map sk-xxx API key to ChatGPT token"""
+    if not api_key or not api_key.startswith("sk-"):
+        return api_key
+    
+    try:
+        # Load API keys mapping
+        from pathlib import Path
+        apikeys_file = Path("apikeys.json")
+        tokens_file = Path("tokens.json")
+        
+        if not apikeys_file.exists():
+            return api_key
+        
+        with open(apikeys_file, 'r') as f:
+            apikeys = json.load(f)
+        
+        # Find the API key
+        for name, data in apikeys.items():
+            if data.get('key') == api_key:
+                token_name = data.get('token_name', 'auto')
+                
+                # Load tokens
+                if tokens_file.exists():
+                    with open(tokens_file, 'r') as f:
+                        tokens = json.load(f)
+                    
+                    if token_name in tokens:
+                        return tokens[token_name]
+                    elif token_name == 'auto' and tokens:
+                        return list(tokens.values())[0]
+        
+        # API key not found, return original
+        return api_key
+        
+    except Exception as e:
+        logger.error(f"API key mapping error: {e}")
+        return api_key
+
+
 @app.post(f"/{api_prefix}/v1/chat/completions" if api_prefix else "/v1/chat/completions")
 async def send_conversation(request: Request, req_token: str = Depends(oauth2_scheme)):
     try:
         request_data = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail={"error": "Invalid JSON body"})
+    
+    # Map API key to ChatGPT token
+    req_token = map_apikey_to_token(req_token)
+    
     chat_service, res = await async_retry(process, request_data, req_token)
     try:
         if isinstance(res, types.AsyncGeneratorType):
