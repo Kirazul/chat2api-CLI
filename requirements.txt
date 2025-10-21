@@ -16,3 +16,4 @@ tiktoken
 numpy
 psutil
 Pillow
+pybase64
