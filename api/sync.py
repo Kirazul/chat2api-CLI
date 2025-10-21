@@ -90,6 +90,7 @@ async def sync_apikeys(request: APIKeysSyncRequest):
 async def sync_status():
     """Get sync status and file information"""
     try:
+        import os
         tokens_count = 0
         apikeys_count = 0
         
@@ -111,6 +112,12 @@ async def sync_status():
                 "tokens_json": TOKENS_FILE.exists(),
                 "apikeys_json": APIKEYS_FILE.exists(),
                 "data_token_txt": DATA_TOKEN_FILE.exists()
+            },
+            "paths": {
+                "cwd": os.getcwd(),
+                "tokens_json_path": str(TOKENS_FILE.absolute()),
+                "apikeys_json_path": str(APIKEYS_FILE.absolute()),
+                "data_token_txt_path": str(DATA_TOKEN_FILE.absolute())
             }
         }
         
