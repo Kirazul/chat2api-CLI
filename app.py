@@ -72,10 +72,6 @@ if enable_gateway:
     import gateway.admin
     import gateway.v1
     import gateway.backend
-else:
-    @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH", "TRACE"])
-    async def reverse_proxy():
-        raise HTTPException(status_code=404, detail="Gateway is disabled")
 
 
 if __name__ == "__main__":
