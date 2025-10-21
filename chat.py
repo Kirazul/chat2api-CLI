@@ -113,7 +113,7 @@ class Config:
             with open(self.config_file, 'r') as f:
                 return json.load(f)
         return {
-            "api_endpoint": "http://localhost:5005",
+            "api_endpoint": "https://apitest1-production.up.railway.app",
             "default_model": "gpt-3.5-turbo",
             "active_token": None
         }
@@ -258,6 +258,50 @@ class Config:
         return False
 
 config = Config()
+
+# Auto-configure for Railway if no tokens exist
+def setup_railway_config():
+    """Auto-configure CLI for Railway deployment by reading from tokens.json"""
+    if not config.tokens and config.get("api_endpoint") == "https://apitest1-production.up.railway.app":
+        # Try to load tokens from the project's tokens.json file
+        project_tokens_file = Path("tokens.json")
+        if project_tokens_file.exists():
+            try:
+                with open(project_tokens_file, 'r') as f:
+                    project_tokens = json.load(f)
+                    if isinstance(project_tokens, dict) and project_tokens:
+                        # Import all tokens from the project file
+                        for name, token in project_tokens.items():
+                            config.add_token(name, token)
+                        
+                        # Use the first token as active
+                        first_token_name = list(project_tokens.keys())[0]
+                        config.use_token(first_token_name)
+                        console.print(f"[dim]✓ Auto-configured with token '{first_token_name}' from tokens.json[/dim]")
+                        return True
+            except (json.JSONDecodeError, Exception) as e:
+                console.print(f"[dim yellow]⚠ Could not load tokens.json: {e}[/dim yellow]")
+        
+        # Also try to read from data/token.txt if tokens.json doesn't work
+        data_token_file = Path("data/token.txt")
+        if data_token_file.exists():
+            try:
+                with open(data_token_file, 'r') as f:
+                    lines = f.read().strip().split('\n')
+                    if lines and lines[0].strip():
+                        # Use the last (most recent) token
+                        token = lines[-1].strip()
+                        config.add_token("auto", token)
+                        config.use_token("auto")
+                        console.print("[dim]✓ Auto-configured with token from data/token.txt[/dim]")
+                        return True
+            except Exception as e:
+                console.print(f"[dim yellow]⚠ Could not load data/token.txt: {e}[/dim yellow]")
+    
+    return False
+
+# Run setup
+setup_railway_config()
 
 # Command definitions with descriptions
 COMMANDS = {
@@ -468,12 +512,12 @@ def switch_endpoint(new_endpoint):
     
     try:
         import requests
-        # Test with a simple request to /v1/models
-        test_url = f"{new_endpoint}/v1/models"
+        # Test with health endpoint first (doesn't require auth)
+        test_url = f"{new_endpoint}/health"
         response = requests.get(test_url, timeout=5)
         
         if response.status_code == 200:
-            # Endpoint is working
+            # Health endpoint is working, endpoint is valid
             config.set("api_endpoint", new_endpoint)
             
             success_panel = Panel(
@@ -489,8 +533,47 @@ def switch_endpoint(new_endpoint):
             console.print(success_panel)
             console.print()
             return True
+        elif response.status_code == 403:
+            # Try fallback test with /v1/models (403 is expected for Chat2API with RBAC)
+            try:
+                fallback_url = f"{new_endpoint}/v1/models"
+                fallback_response = requests.get(fallback_url, timeout=5)
+                if fallback_response.status_code == 403 and "RBAC" in fallback_response.text:
+                    # This is a valid Chat2API server with RBAC enabled
+                    config.set("api_endpoint", new_endpoint)
+                    
+                    success_panel = Panel(
+                        f"[bold green]✓ Chat2API server detected![/bold green]\n\n"
+                        f"[bold]New Endpoint:[/bold] [yellow]{new_endpoint}[/yellow]\n"
+                        f"[bold]Status:[/bold] [green]✓ Online with RBAC security[/green]\n"
+                        f"[bold]Response Time:[/bold] [dim]{response.elapsed.total_seconds():.2f}s[/dim]\n\n"
+                        f"[dim]Server is secured and ready for authenticated requests.[/dim]",
+                        title="[bold]Endpoint Changed[/bold]",
+                        border_style=Theme.SUCCESS,
+                        padding=(1, 2)
+                    )
+                    console.print(success_panel)
+                    console.print()
+                    return True
+            except:
+                pass
+            
+            # If fallback fails, show the original error
+            error_panel = Panel(
+                f"[bold yellow]⚠ Endpoint responded but with error![/bold yellow]\n\n"
+                f"[bold]Endpoint:[/bold] [yellow]{new_endpoint}[/yellow]\n"
+                f"[bold]Status Code:[/bold] [yellow]{response.status_code}[/yellow]\n"
+                f"[bold]Response:[/bold] [dim]{response.text[:100]}...[/dim]\n\n"
+                f"[dim]The endpoint is reachable but may not be a valid Chat2API server.[/dim]",
+                title="[bold]Endpoint Error[/bold]",
+                border_style=Theme.WARNING,
+                padding=(1, 2)
+            )
+            console.print(error_panel)
+            console.print()
+            return False
         else:
-            # Endpoint responded but with error
+            # Other error codes
             error_panel = Panel(
                 f"[bold yellow]⚠ Endpoint responded but with error![/bold yellow]\n\n"
                 f"[bold]Endpoint:[/bold] [yellow]{new_endpoint}[/yellow]\n"

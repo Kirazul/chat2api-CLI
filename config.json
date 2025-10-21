@@ -1,5 +1,5 @@
 {
-  "api_endpoint": "${RAILWAY_PUBLIC_DOMAIN:http://localhost:5005}",
+  "api_endpoint": "https://apitest1-production.up.railway.app/",
   "default_model": "gpt-3.5-turbo",
-  "active_token": "${ACTIVE_TOKEN:aziz}"
+  "active_token": "aziz"
 }
