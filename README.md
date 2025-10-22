@@ -91,13 +91,42 @@ Chat2API CLI is a fork of [Niansuh/chat2api](https://github.com/Niansuh/chat2api
 #### System
 - `/reset` - Reset all settings, tokens, and API keys
 
-## Installation
+## Quick Start (Windows Executable)
+
+**Download the latest release and run the executables:**
+
+1. **Download the release**
+   - Go to [Releases](https://github.com/Kirazul/chat2api-CLI/releases)
+   - Download `chat2api-CLI.zip`
+   - Extract to a folder
+
+2. **Start the server**
+   ```cmd
+   app.exe
+   ```
+   The server will start on `http://localhost:5005`
+
+3. **Launch the CLI** (in a new terminal)
+   ```cmd
+   chat.exe
+   ```
+
+4. **Add your ChatGPT token**
+   - In the CLI, type `/token add`
+   - Get your token from [https://chatgpt.com/api/auth/session](https://chatgpt.com/api/auth/session)
+   - Paste it when prompted
+
+5. **Start chatting!**
+   - Type normally to chat with AI
+   - Use `/help` to see all commands
+
+## Installation (From Source)
 
 ### Prerequisites
 - Python 3.8 or higher
 - pip package manager
 
-### Quick Start
+### Setup
 
 1. **Clone the repository**
 ```bash
@@ -110,18 +139,12 @@ cd chat2api-cli
 pip install -r requirements.txt
 ```
 
-3. **Configure environment** (optional)
+3. **Start the server**
 ```bash
-cp .env.example .env
-# Edit .env with your preferred settings
+python app.py
 ```
 
-4. **Start the server**
-```bash
-python start.py
-```
-
-5. **Launch the CLI** (in a new terminal)
+4. **Launch the CLI** (in a new terminal)
 ```bash
 python chat.py
 ```
