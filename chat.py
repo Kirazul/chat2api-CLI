@@ -31,7 +31,6 @@ from prompt_toolkit import prompt as pt_prompt
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.formatted_text import HTML
 
-# Retro color scheme
 class Theme:
     """Retro pixelated theme for the CLI"""
     # Primary colors
@@ -58,7 +57,6 @@ class Theme:
     ACCENT_RED = "#ef4444"
     ACCENT_CYAN = "#06b6d4"
 
-# Initialize console with professional theme
 from rich.theme import Theme as RichTheme
 
 rich_theme = RichTheme({
@@ -75,20 +73,18 @@ console = Console(
     theme=rich_theme
 )
 
-# Configuration - Use exe-relative paths when bundled
 def get_data_dir():
     """Get the appropriate data directory based on execution context"""
-    # First check if config.json exists in current directory
-    current_dir = Path.cwd()
-    if (current_dir / "config.json").exists():
-        return current_dir
-    
     if getattr(sys, 'frozen', False):
-        # Running as PyInstaller bundle - use exe directory
         return Path(sys.executable).parent
     else:
-        # Running as script - use home directory
-        return Path.home() / ".chat2api_cli"
+        return Path.cwd()
+
+def normalize_endpoint(endpoint: str) -> str:
+    """Normalize endpoint URL by removing trailing slashes"""
+    if endpoint:
+        return endpoint.rstrip('/')
+    return endpoint
 
 CONFIG_DIR = get_data_dir()
 CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -111,9 +107,12 @@ class Config:
         """Load configuration from file"""
         if self.config_file.exists():
             with open(self.config_file, 'r') as f:
-                return json.load(f)
+                config_data = json.load(f)
+                if "api_endpoint" in config_data:
+                    config_data["api_endpoint"] = normalize_endpoint(config_data["api_endpoint"])
+                return config_data
         return {
-            "api_endpoint": "https://apitest1-production.up.railway.app",
+            "api_endpoint": "http://localhost:5005",
             "default_model": "gpt-3.5-turbo",
             "active_token": None
         }
@@ -124,14 +123,11 @@ class Config:
             try:
                 with open(self.tokens_file, 'r') as f:
                     data = json.load(f)
-                    # Ensure we return a dictionary, not a list
                     if isinstance(data, dict):
                         return data
                     else:
-                        # If it's a list or other type, return empty dict
                         return {}
             except (json.JSONDecodeError, Exception):
-                # If file is corrupted or invalid, return empty dict
                 return {}
         return {}
 
@@ -151,30 +147,28 @@ class Config:
         return self.config.get(key, default)
 
     def set(self, key: str, value):
+        if key == "api_endpoint" and value:
+            value = normalize_endpoint(value)
         self.config[key] = value
         self.save_config()
 
     def add_token(self, name: str, token: str, sync_to_server=True):
         """Add a labeled token"""
-        # Ensure tokens is a dictionary
         if not isinstance(self.tokens, dict):
             self.tokens = {}
         
         self.tokens[name] = token
         self.save_tokens()
-        # Also save to data/token.txt for server compatibility
         DATA_DIR.mkdir(exist_ok=True)
         token_file = DATA_DIR / "token.txt"
         with open(token_file, 'a') as f:
             f.write(f"{token}\n")
         
-        # Sync to Railway server if enabled
         if sync_to_server:
             self.sync_tokens_to_server()
 
     def remove_token(self, name: str):
         """Remove a labeled token"""
-        # Ensure tokens is a dictionary
         if not isinstance(self.tokens, dict):
             self.tokens = {}
             
@@ -186,7 +180,6 @@ class Config:
 
     def use_token(self, name: str):
         """Set active token by name"""
-        # Ensure tokens is a dictionary
         if not isinstance(self.tokens, dict):
             self.tokens = {}
             
@@ -198,14 +191,12 @@ class Config:
 
     def get_active_token(self):
         """Get the currently active token"""
-        # Ensure tokens is a dictionary
         if not isinstance(self.tokens, dict):
             self.tokens = {}
 
         active = self.config.get('active_token')
         if active and active in self.tokens:
             return self.tokens[active]
-        # Fallback to first token
         if self.tokens:
             return list(self.tokens.values())[0]
         return None
@@ -232,15 +223,12 @@ class Config:
 
     def generate_apikey(self, name: str, sync_to_server=True) -> str:
         """Generate a new OpenAI-compatible API key"""
-        # Ensure apikeys is a dictionary
         if not isinstance(self.apikeys, dict):
             self.apikeys = {}
 
-        # Generate a secure random API key in OpenAI format (sk-...)
         random_part = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(48))
         api_key = f"sk-{random_part}"
 
-        # Store with metadata
         self.apikeys[name] = {
             "key": api_key,
             "created": __import__('datetime').datetime.now().isoformat(),
@@ -248,7 +236,6 @@ class Config:
         }
         self.save_apikeys()
         
-        # Sync to Railway server if enabled
         if sync_to_server:
             self.sync_apikeys_to_server()
 
@@ -266,23 +253,20 @@ class Config:
         return False
 
     def sync_tokens_to_server(self):
-        """Sync local tokens to Railway server"""
+        """Sync local tokens to server"""
         endpoint = self.get("api_endpoint", "http://localhost:5005")
         
-        # Only sync if using Railway endpoint
-        if "railway.app" not in endpoint:
+        if endpoint == "http://localhost:5005":
             return False
         
         try:
             import requests
             
-            # Prepare tokens data
             tokens_data = {
                 "tokens": self.tokens,
                 "sync_type": "tokens"
             }
             
-            # Send to server sync endpoint
             response = requests.post(
                 f"{endpoint}/admin/sync/tokens",
                 json=tokens_data,
@@ -301,23 +285,19 @@ class Config:
             return False
 
     def sync_apikeys_to_server(self):
-        """Sync local API keys to Railway server"""
         endpoint = self.get("api_endpoint", "http://localhost:5005")
         
-        # Only sync if using Railway endpoint
-        if "railway.app" not in endpoint:
+        if endpoint == "http://localhost:5005":
             return False
         
         try:
             import requests
             
-            # Prepare API keys data
             apikeys_data = {
                 "apikeys": self.apikeys,
                 "sync_type": "apikeys"
             }
             
-            # Send to server sync endpoint
             response = requests.post(
                 f"{endpoint}/admin/sync/apikeys",
                 json=apikeys_data,
@@ -337,22 +317,18 @@ class Config:
 
 config = Config()
 
-# Auto-configure for Railway if no tokens exist
-def setup_railway_config():
-    """Auto-configure CLI for Railway deployment by reading from tokens.json"""
-    if not config.tokens and config.get("api_endpoint") == "https://apitest1-production.up.railway.app":
-        # Try to load tokens from the project's tokens.json file
+def setup_auto_config():
+    """Auto-configure CLI by reading from tokens.json"""
+    if not config.tokens:
         project_tokens_file = Path("tokens.json")
         if project_tokens_file.exists():
             try:
                 with open(project_tokens_file, 'r') as f:
                     project_tokens = json.load(f)
                     if isinstance(project_tokens, dict) and project_tokens:
-                        # Import all tokens from the project file
                         for name, token in project_tokens.items():
                             config.add_token(name, token)
                         
-                        # Use the first token as active
                         first_token_name = list(project_tokens.keys())[0]
                         config.use_token(first_token_name)
                         console.print(f"[dim]✓ Auto-configured with token '{first_token_name}' from tokens.json[/dim]")
@@ -360,14 +336,12 @@ def setup_railway_config():
             except (json.JSONDecodeError, Exception) as e:
                 console.print(f"[dim yellow]⚠ Could not load tokens.json: {e}[/dim yellow]")
         
-        # Also try to read from data/token.txt if tokens.json doesn't work
         data_token_file = Path("data/token.txt")
         if data_token_file.exists():
             try:
                 with open(data_token_file, 'r') as f:
                     lines = f.read().strip().split('\n')
                     if lines and lines[0].strip():
-                        # Use the last (most recent) token
                         token = lines[-1].strip()
                         config.add_token("auto", token)
                         config.use_token("auto")
@@ -378,10 +352,8 @@ def setup_railway_config():
     
     return False
 
-# Run setup
-setup_railway_config()
+setup_auto_config()
 
-# Command definitions with descriptions
 COMMANDS = {
     "/help": "Show all available commands",
     "/status": "Display current settings and connection status",
@@ -480,35 +452,34 @@ def show_help():
     """Show available commands with professional formatting"""
     console.print()
 
-    # Create a comprehensive help panel
     help_content = """
-[bold #10b981]Chat & Navigation[/bold #10b981]
-  [bold #a855f7]/help[/bold #a855f7]                    Show this command reference
-  [bold #a855f7]/status[/bold #a855f7]                  Display system status and configuration
-  [bold #a855f7]/clear[/bold #a855f7]                   Clear conversation history
-  [bold #a855f7]/web[/bold #a855f7]                     Open ChatGPT web interface in browser
-  [bold #a855f7]/exit[/bold #a855f7]                    Exit the application
+[bold
+  [bold
+  [bold
+  [bold
+  [bold
+  [bold
 
-[bold #8b5cf6]Model Management[/bold #8b5cf6]
-  [bold #a855f7]/models[/bold #a855f7]                  List available AI models
-  [bold #a855f7]/use <model>[/bold #a855f7]             Switch to a different model
-  [bold #a855f7]/stream[/bold #a855f7]                  Toggle streaming mode
+[bold
+  [bold
+  [bold
+  [bold
 
-[bold #10b981]Authentication[/bold #10b981]
-  [bold #a855f7]/token add[/bold #a855f7]               Add a new access token
-  [bold #a855f7]/token list[/bold #a855f7]              List all saved tokens
-  [bold #a855f7]/token use <name>[/bold #a855f7]        Switch to a specific token
-  [bold #a855f7]/token remove <name>[/bold #a855f7]     Remove a token
+[bold
+  [bold
+  [bold
+  [bold
+  [bold
 
-[bold #f59e0b]API Integration[/bold #f59e0b]
-  [bold #a855f7]/endpoint <url>[/bold #a855f7]          Switch API endpoint (e.g., /endpoint https://your-server.com)
-  [bold #a855f7]/apikey generate[/bold #a855f7]         Generate OpenAI-compatible API key
-  [bold #a855f7]/apikey list[/bold #a855f7]             List all generated API keys
-  [bold #a855f7]/apikey test <name>[/bold #a855f7]      Test a specific API key
-  [bold #a855f7]/apikey remove <name>[/bold #a855f7]    Remove an API key
+[bold
+  [bold
+  [bold
+  [bold
+  [bold
+  [bold
 
-[bold #ef4444]System[/bold #ef4444]
-  [bold #a855f7]/reset[/bold #a855f7]                   Reset all settings, tokens, and API keys
+[bold
+  [bold
 
 [dim][bold]Quick Start:[/bold] Type normally to chat with AI. Commands start with /[/dim]
 [dim][bold]Examples:[/bold] /use gpt-4, /token add, /apikey generate, /web[/dim]
@@ -530,11 +501,9 @@ def open_web_interface():
     """Open the ChatGPT web interface in the default browser"""
     console.print()
     
-    # Get the web URL
     endpoint = config.get("api_endpoint", "http://localhost:5005")
     web_url = f"{endpoint}/"
     
-    # Open the web interface directly
     try:
         webbrowser.open(web_url)
         
@@ -717,7 +686,6 @@ def show_status(current_model, current_stream, conversation_history):
     """Show current status with retro design"""
     console.print()
 
-    # Connection Status
     endpoint = config.get("api_endpoint", "http://localhost:5005")
     try:
         import requests
@@ -730,7 +698,6 @@ def show_status(current_model, current_stream, conversation_history):
         status_text = "OFFLINE"
         status_color = Theme.ERROR
 
-    # Simple status display with gradient borders
     console.print(Align.center("╔══════════════════════════════════════════════════════════════════════════════╗"), style="#a855f7")
     console.print(Align.center("║                                Server Status                                 ║"), style="#9333ea")
     console.print(Align.center("╚══════════════════════════════════════════════════════════════════════════════╝"), style="#7c3aed")
@@ -742,7 +709,6 @@ def show_status(current_model, current_stream, conversation_history):
     console.print(Align.center(f"Streaming    [{Theme.SUCCESS if current_stream else Theme.WARNING}]{'Enabled' if current_stream else 'Disabled'}[/{Theme.SUCCESS if current_stream else Theme.WARNING}]"))
     console.print()
     
-    # Quick help
     console.print(Align.center(f"Type [{Theme.ACCENT_PURPLE}]/help[/{Theme.ACCENT_PURPLE}] for commands"))
     console.print()
 
@@ -812,7 +778,6 @@ def list_models():
 
 def list_tokens():
     """List all saved tokens with professional formatting"""
-    # Ensure tokens is a dictionary
     if not isinstance(config.tokens, dict):
         config.tokens = {}
 
@@ -834,7 +799,6 @@ def list_tokens():
 
     console.print()
     
-    # Create tokens table
     tokens_table = Table(
         title="[bold white]Access Tokens[/bold white]",
         show_header=True,
@@ -850,7 +814,6 @@ def list_tokens():
     tokens_table.add_column("Status", style="default", width=15)
 
     for name, token in config.tokens.items():
-        # Determine token type and color
         if token.startswith("eyJhbGciOi"):
             token_type = "JWT"
             type_color = Theme.ACCENT_BLUE
@@ -864,10 +827,8 @@ def list_tokens():
             token_type = "Unknown"
             type_color = Theme.ACCENT_YELLOW
 
-        # Show preview
         preview = f"{token[:12]}...{token[-6:]}" if len(token) > 25 else token
 
-        # Active indicator
         if name == active:
             status = f"[{Theme.SUCCESS}]Active[/{Theme.SUCCESS}]"
             name_style = f"[{Theme.SUCCESS}]{name}[/{Theme.SUCCESS}]"
@@ -885,7 +846,6 @@ def list_tokens():
     console.print(Align.center(tokens_table))
     console.print()
     
-    # Management instructions
     if active:
         active_info = f"[bold green]Active Token:[/bold green] [bold]{active}[/bold]"
     else:
@@ -986,7 +946,6 @@ def generate_apikey_interactive():
     """Generate a new API key for external programs with professional interface"""
     console.print()
 
-    # Check if there's an active token
     if not config.get_active_token():
         error_panel = Panel(
             "[bold red]✗ No ChatGPT access token configured![/bold red]\n\n"
@@ -1000,7 +959,6 @@ def generate_apikey_interactive():
         console.print()
         return
 
-    # Welcome panel
     welcome_panel = Panel(
         "[bold white]Generate OpenAI-Compatible API Key[/bold white]\n\n"
         "[dim]This creates a secure API key that external applications can use to access your ChatGPT account.[/dim]",
@@ -1011,7 +969,6 @@ def generate_apikey_interactive():
     console.print(welcome_panel)
     console.print()
 
-    # Ask for name
     name = Prompt.ask(
         "[bold #a855f7]🏷️  API Key Name[/bold #a855f7]",
         default="my-app",
@@ -1022,7 +979,6 @@ def generate_apikey_interactive():
         console.print(f"[{Theme.ERROR}]✗ Name cannot be empty![/{Theme.ERROR}]")
         return
 
-    # Ensure apikeys is a dictionary
     if not isinstance(config.apikeys, dict):
         config.apikeys = {}
 
@@ -1031,11 +987,9 @@ def generate_apikey_interactive():
             console.print("[dim]✗ Operation cancelled[/dim]")
             return
 
-    # Generate the API key
     api_key = config.generate_apikey(name)
     endpoint = config.get("api_endpoint", "http://localhost:5005")
 
-    # Success panel with key details
     success_panel = Panel(
         f"[bold green]✓ API Key Generated Successfully![/bold green]\n\n"
         f"[bold]Name:[/bold] [yellow]{name}[/yellow]\n"
@@ -1048,7 +1002,6 @@ def generate_apikey_interactive():
     console.print(success_panel)
     console.print()
 
-    # Usage examples
     examples_panel = Panel(
         "[bold]Configuration Examples:[/bold]\n\n"
         "[bold yellow]Continue.dev (VS Code Extension):[/bold yellow]\n"
@@ -1073,7 +1026,6 @@ def generate_apikey_interactive():
     console.print(examples_panel)
     console.print()
 
-    # Security note
     security_panel = Panel(
         "[bold yellow]🔒 Security Note[/bold yellow]\n\n"
         "[dim]This API key provides access to your ChatGPT account through this CLI.\n"
@@ -1170,12 +1122,9 @@ def extract_actual_model(response_model: str, requested_model: str) -> str:
     if not response_model:
         return requested_model
     
-    # If the response model matches the requested model, return as is
     if response_model == requested_model:
         return response_model
     
-    # Handle model mapping - return the actual model that was used
-    # This handles cases where gpt-4 becomes gpt-4-0613, etc.
     return response_model
 
 async def verify_model(model: str) -> bool:
@@ -1237,11 +1186,9 @@ async def test_apikey(api_key_name: str, model: str):
     console.print("╚════════════════════════════════════════════════════════════════════════╝", style="#7c3aed")
     console.print()
 
-    # Ensure apikeys is a dictionary
     if not isinstance(config.apikeys, dict):
         config.apikeys = {}
 
-    # Find the API key
     if api_key_name not in config.apikeys:
         console.print(f"[bright_red]✗ API key '{api_key_name}' not found![/bright_red]")
         console.print("[dim bright_white]💡 List available keys with: [#a855f7]/apikey list[/#a855f7][/dim bright_white]")
@@ -1463,15 +1410,12 @@ def main():
     """Main CLI loop"""
     show_banner()
 
-    # Initialize state
     current_model = config.get("default_model", "gpt-3.5-turbo")
     current_stream = True
     conversation_history = []
 
-    # Show initial status
     show_status(current_model, current_stream, conversation_history)
 
-    # Main loop
     while True:
         try:
             user_input = get_user_input()
@@ -1479,7 +1423,6 @@ def main():
             if not user_input.strip():
                 continue
 
-            # Exit commands
             if user_input.lower() in ["exit", "/exit", "bye"]:
                 console.print()
                 goodbye_panel = Panel(
@@ -1495,23 +1438,19 @@ def main():
                 console.print()
                 break
 
-            # Handle slash commands
             if user_input.startswith("/"):
                 parts = user_input.split(maxsplit=1)
                 command = parts[0].lower()
                 arg = parts[1] if len(parts) > 1 else None
 
-                # Help
                 if command == "/help":
                     show_help()
                     continue
 
-                # Status
                 elif command == "/status":
                     show_status(current_model, current_stream, conversation_history)
                     continue
 
-                # Models
                 elif command == "/models":
                     list_models()
                     continue
@@ -1520,7 +1459,6 @@ def main():
                     if arg:
                         current_model = arg
                         
-                        # Verify the model is actually working
                         console.print(f"[dim]Verifying model '{current_model}'...[/dim]")
                         is_verified = asyncio.run(verify_model(current_model))
                         
@@ -1564,7 +1502,6 @@ def main():
                         console.print()
                     continue
 
-                # Stream toggle
                 elif command == "/stream":
                     current_stream = not current_stream
                     status_emoji = "✓" if current_stream else "✗"
@@ -1582,26 +1519,21 @@ def main():
                     console.print()
                     continue
 
-                # Clear conversation
                 elif command == "/clear":
                     conversation_history = []
-                    # Clear screen but keep header and status
                     os.system('cls' if os.name == 'nt' else 'clear')
                     show_banner()
                     show_status(current_model, current_stream, conversation_history)
                     continue
 
-                # Open web interface
                 elif command == "/web":
                     open_web_interface()
                     continue
 
-                # Endpoint switching
                 elif command == "/endpoint":
                     if arg:
                         switch_endpoint(arg)
                     else:
-                        # Show current endpoint and usage
                         current_endpoint = config.get("api_endpoint", "http://localhost:5005")
                         usage_panel = Panel(
                             f"[bold yellow]⚠ Usage: /endpoint <url>[/bold yellow]\n\n"
@@ -1619,15 +1551,12 @@ def main():
                         console.print()
                     continue
 
-                # Reset
                 elif command == "/reset":
                     if Confirm.ask(f"[{Theme.WARNING}]⚠ Reset all settings to defaults?[/{Theme.WARNING}]"):
-                        # Reset session settings
                         conversation_history = []
                         current_model = "gpt-3.5-turbo"
                         current_stream = True
                         
-                        # Reset tokens and API keys
                         config.tokens = {}
                         config.apikeys = {}
                         config.config['active_token'] = None
@@ -1635,14 +1564,13 @@ def main():
                         config.save_apikeys()
                         config.save_config()
                         
-                        # Clear server token file as well
                         try:
                             DATA_DIR.mkdir(exist_ok=True)
                             token_file = DATA_DIR / "token.txt"
                             with open(token_file, 'w') as f:
-                                pass  # Clear the file
+                                pass
                         except Exception:
-                            pass  # Ignore errors if file doesn't exist
+                            pass
                         
                         reset_panel = Panel(
                             "[bold green]✓ Reset complete![/bold green]\n\n"
@@ -1657,7 +1585,6 @@ def main():
                     continue
 
 
-                # Token management
                 elif command == "/token":
                     if not arg:
                         console.print()
@@ -1704,7 +1631,6 @@ def main():
 
                     continue
 
-                # API Key management
                 elif command == "/apikey":
                     if not arg:
                         console.print()
@@ -1755,17 +1681,14 @@ def main():
                     console.print("[dim bright_white]💡 Type [#a855f7]/help[/#a855f7] to see all available commands[/dim bright_white]")
                     continue
 
-            # Regular chat message
             conversation_history.append({"role": "user", "content": user_input})
 
             response, actual_model = asyncio.run(send_message(user_input, current_model, conversation_history, current_stream))
 
             if response:
                 conversation_history.append({"role": "assistant", "content": response})
-                # Update current model with the actual model used by the server
                 if actual_model != current_model:
                     current_model = actual_model
-                    # Show a subtle notification about model change
                     console.print(f"[dim]{Theme.ACCENT_PURPLE}ℹ Model updated to: {actual_model}[/{Theme.ACCENT_PURPLE}][/dim]")
                     console.print()
 
@@ -1776,13 +1699,10 @@ def main():
             console.print("\n[#a855f7]👋 Goodbye![/#a855f7]\n")
             break
         except Exception as e:
-            # Filter out the specific template tag error message
             error_msg = str(e)
             if "closing tag" in error_msg and "doesn't match any open tag" in error_msg:
-                # Suppress the template tag error message
                 pass
             else:
-                # Escape any markup characters in other error messages to prevent markup errors
                 error_msg = error_msg.replace('[', '\\[').replace(']', '\\]')
                 console.print(f"\n[bright_red]✗ Error: {error_msg}[/bright_red]\n")
 

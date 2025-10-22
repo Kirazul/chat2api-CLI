@@ -1,6 +1,6 @@
 """
 Sync API for CLI to Server communication
-Allows CLI to sync tokens and API keys to the Railway server
+Allows CLI to sync tokens and API keys to remote servers
 """
 import json
 from pathlib import Path

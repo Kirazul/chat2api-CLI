@@ -37,6 +37,22 @@ app.add_middleware(
 from middleware.apikey_mapper import APIKeyMapperMiddleware
 app.add_middleware(APIKeyMapperMiddleware)
 
+# Add middleware to handle double slashes in URLs
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class DoubleSlashFixMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # Fix double slashes in path by normalizing
+        if '//' in request.url.path:
+            # Replace multiple slashes with single slash
+            import re
+            fixed_path = re.sub(r'/+', '/', request.url.path)
+            # Update the request scope path
+            request.scope['path'] = fixed_path
+        return await call_next(request)
+
+app.add_middleware(DoubleSlashFixMiddleware)
+
 # Handle templates path for both development and PyInstaller bundle
 def get_templates_directory():
     if getattr(sys, 'frozen', False):
@@ -81,7 +97,7 @@ if enable_gateway:
 if __name__ == "__main__":
     import os
     
-    # Get host and port from environment variables (Railway compatible)
+    # Get host and port from environment variables
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "5005"))
     

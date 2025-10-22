@@ -120,3 +120,19 @@ Thumbs.db
 *.log
 temp/
 tmp/
+
+# Sensitive data - DO NOT COMMIT
+tokens.json
+apikeys.json
+config.json
+.env
+.env.production
+.env.local
+data/
+data/*.txt
+data/*.json
+
+# Test files
+test_*.json
+sync_*.json
+*_test.json

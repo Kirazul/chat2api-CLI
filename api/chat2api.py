@@ -50,7 +50,7 @@ async def process(request_data, req_token):
     return chat_service, res
 
 
-@app.post(f"/{api_prefix}/v1/chat/completions" if api_prefix else "/v1/chat/completions")
+@app.post(f"{api_prefix}/v1/chat/completions" if api_prefix else "/v1/chat/completions")
 async def send_conversation(request: Request, credentials: HTTPAuthorizationCredentials = Security(security_scheme)):
     # Get the provided token (could be API key or direct token)
     provided_token = credentials.credentials
@@ -82,14 +82,14 @@ async def send_conversation(request: Request, credentials: HTTPAuthorizationCred
         raise HTTPException(status_code=500, detail="Server error")
 
 
-@app.get(f"/{api_prefix}/tokens" if api_prefix else "/tokens", response_class=HTMLResponse)
+@app.get(f"{api_prefix}/tokens" if api_prefix else "/tokens", response_class=HTMLResponse)
 async def upload_html(request: Request):
     tokens_count = len(set(globals.token_list) - set(globals.error_token_list))
     return templates.TemplateResponse("tokens.html",
                                       {"request": request, "api_prefix": api_prefix, "tokens_count": tokens_count})
 
 
-@app.post(f"/{api_prefix}/tokens/upload" if api_prefix else "/tokens/upload")
+@app.post(f"{api_prefix}/tokens/upload" if api_prefix else "/tokens/upload")
 async def upload_post(text: str = Form(...)):
     lines = text.split("\n")
     for line in lines:
@@ -102,7 +102,7 @@ async def upload_post(text: str = Form(...)):
     return {"status": "success", "tokens_count": tokens_count}
 
 
-@app.post(f"/{api_prefix}/tokens/clear" if api_prefix else "/tokens/clear")
+@app.post(f"{api_prefix}/tokens/clear" if api_prefix else "/tokens/clear")
 async def upload_post():
     globals.token_list.clear()
     globals.error_token_list.clear()
@@ -113,13 +113,13 @@ async def upload_post():
     return {"status": "success", "tokens_count": tokens_count}
 
 
-@app.post(f"/{api_prefix}/tokens/error" if api_prefix else "/tokens/error")
+@app.post(f"{api_prefix}/tokens/error" if api_prefix else "/tokens/error")
 async def error_tokens():
     error_tokens_list = list(set(globals.error_token_list))
     return {"status": "success", "error_tokens": error_tokens_list}
 
 
-@app.get(f"/{api_prefix}/tokens/add/{{token}}" if api_prefix else "/tokens/add/{token}")
+@app.get(f"{api_prefix}/tokens/add/{{token}}" if api_prefix else "/tokens/add/{token}")
 async def add_token(token: str):
     if token.strip() and not token.startswith("#"):
         globals.token_list.append(token.strip())
