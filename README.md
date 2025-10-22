@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Chat2API CLI Preview](assets/preview.png)
+![Chat2API CLI Preview](Assets/preview.png)
 
 **Transform ChatGPT into a powerful OpenAI-compatible API with a professional CLI interface**
 
